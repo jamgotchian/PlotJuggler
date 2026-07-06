@@ -42,8 +42,13 @@ public:
       msg_type.replace(pos, 2, "/");
     }
 
+    auto deserializer = new RosMsgParser::ROS2_Deserializer();
+    // RTI DDS Micro aligns from message start (byte 0), not from after CDR header (byte 4)
+    // This differs from eProsima FastDDS/ROS2 behavior
+    deserializer->setAlignFromMessageStart(true);
+
     auto parser = std::make_shared<ParserROS>(topic_name, msg_type, schema,
-                                              new RosMsgParser::ROS2_Deserializer(), data,
+                                              deserializer, data,
                                               RosMsgParser::DDS_IDL);
     QSettings settings;
     parser->enableTruncationCheck(settings.value("Preferences::truncation_check", true).toBool());

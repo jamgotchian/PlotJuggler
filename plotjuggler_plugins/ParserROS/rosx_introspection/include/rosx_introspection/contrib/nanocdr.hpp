@@ -180,7 +180,8 @@ struct TypeDefinition
 class Decoder
 {
 public:
-  Decoder(ConstBuffer buffer, CdrVersion default_cdr = CdrVersion::DDS_CDR);
+  Decoder(ConstBuffer buffer, CdrVersion default_cdr = CdrVersion::DDS_CDR,
+          bool align_from_message_start = false);
 
   const CdrHeader& header() const
   {
@@ -414,8 +415,9 @@ inline void swapEndianness(T& val)
   }
 }
 
-inline Decoder::Decoder(ConstBuffer buffer, CdrVersion default_cdr)
-  : buffer_(buffer), origin_(buffer.data() + 4)
+inline Decoder::Decoder(ConstBuffer buffer, CdrVersion default_cdr,
+                       bool align_from_message_start)
+  : buffer_(buffer), origin_(buffer.data() + (align_from_message_start ? 0 : 4))
 {
   const auto* ptr = buffer_.data();
   uint8_t dummy = ptr[0];
@@ -464,6 +466,12 @@ inline Decoder::Decoder(ConstBuffer buffer, CdrVersion default_cdr)
       throw std::runtime_error("Unexpected encoding received.");
   }
   align64_ = (header_.version == CdrVersion::XCDRv2) ? 4 : 8;
+
+  // Note: origin_ determines alignment calculation:
+  // - FastDDS/ROS2: aligns from byte 4 (after CDR header) [default, align_from_message_start=false]
+  // - RTI DDS Micro: aligns from byte 0 (message start) [align_from_message_start=true]
+  // Both interpretations exist in practice, though the CDR spec is ambiguous on this point.
+
   buffer_.trim_front(4);  // Remove the header from the buffer
 }
 
