@@ -43,9 +43,10 @@ public:
     }
 
     auto deserializer = new RosMsgParser::ROS2_Deserializer();
-    // RTI DDS Micro aligns from message start (byte 0), not from after CDR header (byte 4)
-    // This differs from eProsima FastDDS/ROS2 behavior
-    deserializer->setAlignFromMessageStart(true);
+    // CDR alignment is configurable per-file via MCAP load dialog
+    // - Default (false): XCDR2 standard, align from byte 4 (after CDR header)
+    // - Legacy mode (true): RTI DDS Micro, align from byte 0 (message start)
+    // Configured via setUseLegacyCdrAlignment() after parser creation
 
     auto parser = std::make_shared<ParserROS>(topic_name, msg_type, schema,
                                               deserializer, data,
